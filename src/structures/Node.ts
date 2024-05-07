@@ -8,6 +8,7 @@ import {
   TrackStuckEvent,
   WebSocketClosedEvent,
 } from "./Utils";
+import spotifyAutoplay from "../utils/spotifyAutoplay";
 import { Manager } from "./Manager";
 import { Player, Track, UnresolvedTrack } from "./Player";
 import { Rest } from "./Rest";
@@ -309,29 +310,26 @@ export class Node {
 
     if (!player.isAutoplay || !previousTrack) return;
 
-    const hasYouTubeURL = ["youtube.com", "youtu.be"].some((url) =>
-      previousTrack.uri.includes(url)
-    );
+    let searchURI: string;
 
-    let videoID = previousTrack.uri.substring(
-      previousTrack.uri.indexOf("=") + 1
-    );
-
-    if (!hasYouTubeURL) {
+    if (previousTrack.sourceName === "spotify") {
+      searchURI = await spotifyAutoplay(previousTrack.identifier);
+      if (!searchURI) {
+        const res = await player.search(
+          `${previousTrack.author} - ${previousTrack.title}`
+        );
+        searchURI = `https://www.youtube.com/watch?v=${res?.tracks[0]?.uri}&list=RD${res?.tracks[0]?.uri}`;
+      }
+    }
+    else if (previousTrack.sourceName === "youtube") {
+      searchURI = `https://www.youtube.com/watch?v=${previousTrack.identifier}&list=RD${previousTrack.identifier}`;
+    }
+    else {
       const res = await player.search(
         `${previousTrack.author} - ${previousTrack.title}`
       );
-
-      videoID = res.tracks[0].uri.substring(res.tracks[0].uri.indexOf("=") + 1);
+      searchURI = `https://www.youtube.com/watch?v=${res?.tracks[0]?.identifier}&list=RD${res?.tracks[0]?.identifier}`;
     }
-
-    let randomIndex: number;
-    let searchURI: string;
-
-    do {
-      randomIndex = Math.floor(Math.random() * 23) + 2;
-      searchURI = `https://www.youtube.com/watch?v=${videoID}&list=RD${videoID}&index=${randomIndex}`;
-    } while (track.uri.includes(searchURI));
 
     const res = await player.search(searchURI, player.get("Internal_BotUser"));
 

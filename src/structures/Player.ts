@@ -172,9 +172,20 @@ export class Player {
     this.state = "DESTROYING";
 
     if (disconnect) {
-      this.disconnect();
+      this.manager.options.send(this.guild, {
+        op: 4,
+        d: {
+          guild_id: this.guild,
+          channel_id: null,
+          self_mute: false,
+          self_deaf: false,
+        },
+      });
     }
 
+    if (this?.nowPlayingMessage && this?.nowPlayingMessage.deletable) {
+      this?.nowPlayingMessage?.delete().catch(() => {});
+    }
     this.node.rest.destroyPlayer(this.guild);
     this.manager.emit("playerDestroy", this);
     this.manager.players.delete(this.guild);
