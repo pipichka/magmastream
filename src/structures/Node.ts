@@ -239,7 +239,7 @@ export class Node {
 
       case "TrackEndEvent":
         if (player?.nowPlayingMessage && player?.nowPlayingMessage.deletable) {
-          await player?.nowPlayingMessage?.delete().catch(() => {});
+          await player?.nowPlayingMessage?.delete().catch(() => { });
         }
 
         this.trackEnd(player, track as Track, payload);
@@ -305,50 +305,32 @@ export class Node {
   }
 
   // Handle autoplay
-  private async handleAutoplay(player: Player, track: Track) {
-    const previousTrack = player.queue.previous;
-
-    if (!player.isAutoplay || !previousTrack) return;
-
+  private async handleAutoplay(player: Player, currentTrack: Track) {
+    if (!player.isAutoplay) return;
+  
     let searchURI: string;
 
+    const previousTrack = player.queue.previous;
     if (previousTrack.sourceName === "spotify") {
       searchURI = await spotifyAutoplay(previousTrack.identifier);
-      if (!searchURI) {
-        const res = await player.search(
-          `${previousTrack.author} - ${previousTrack.title}`
-        );
-        searchURI = `https://www.youtube.com/watch?v=${res?.tracks[0]?.uri}&list=RD${res?.tracks[0]?.uri}`;
+    } else if (previousTrack.sourceName === "youtube") {
+      searchURI = `https://www.youtube.com/watch?v=${previousTrack.identifier}&list=RD${previousTrack.identifier}`;
+    } else {
+      const query = `${previousTrack.author} - ${previousTrack.title}`;
+      const res = await player.search(query, player.get("Internal_BotUser"));
+      if (res.tracks[0]) {
+        searchURI = `https://www.youtube.com/watch?v=${res.tracks[0].identifier}&list=RD${res.tracks[0].identifier}`;
       }
     }
-    else if (previousTrack.sourceName === "youtube") {
-      searchURI = `https://www.youtube.com/watch?v=${previousTrack.identifier}&list=RD${previousTrack.identifier}`;
-    }
-    else {
-      const res = await player.search(
-        `${previousTrack.author} - ${previousTrack.title}`
-      );
-      searchURI = `https://www.youtube.com/watch?v=${res?.tracks[0]?.identifier}&list=RD${res?.tracks[0]?.identifier}`;
-    }
 
+    if (!searchURI) searchURI = 'rick role'
     const res = await player.search(searchURI, player.get("Internal_BotUser"));
-
-    if (res.loadType === "empty" || res.loadType === "error") return;
-
+    
     let tracks = res.tracks;
-
-    if (res.loadType === "playlist") {
-      tracks = res.playlist.tracks;
-    }
-
-    const foundTrack = tracks
-      .sort(() => Math.random() - 0.5)
-      .find((shuffledTrack) => shuffledTrack.uri !== track.uri);
-
-    if (foundTrack) {
-      player.queue.add(foundTrack);
-      player.play();
-    }
+    if (res.loadType === "playlist") tracks = res.playlist.tracks;
+    const track = tracks[Math.floor(Math.random() * tracks.length)];
+    player.queue.add(track);
+    player.play();
   }
 
   // Handle the case when a track failed to load or was cleaned up

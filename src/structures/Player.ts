@@ -1,4 +1,3 @@
-import { Filters } from "./Filters";
 import { Manager, SearchQuery, SearchResult } from "./Manager";
 import { Node } from "./Node";
 import { Queue } from "./Queue";
@@ -17,8 +16,6 @@ import { ClientUser, Message, User } from "discord.js";
 export class Player {
   /** The Queue for the Player. */
   public readonly queue = new (Structure.get("Queue"))() as Queue;
-  /** The filters applied to the audio. */
-  public filters: Filters;
   /** Whether the queue repeats the track. */
   public trackRepeat = false;
   /** Whether the queue repeats the queue. */
@@ -111,7 +108,6 @@ export class Player {
     this.manager.players.set(options.guild, this);
     this.manager.emit("playerCreate", this);
     this.setVolume(options.volume ?? 100);
-    this.filters = new Filters(this);
   }
 
   /**
@@ -452,6 +448,31 @@ export class Player {
         encodedTrack: null,
       },
     });
+
+    return this;
+  }
+
+  //** Skips to the next track. */
+  public skip(): this {
+    if (!this.queue.current) return this;
+    if (!this.queue.length) {
+      this.node.rest.updatePlayer({
+        guildId: this.guild,
+        data: {
+          encodedTrack: null,
+        },
+      });
+    }
+    else {
+      this.node.rest.updatePlayer({
+        guildId: this.guild,
+        data: {
+          encodedTrack: this.queue[0].track,
+        },
+      });
+      this.queue.current = this.queue[0];
+      this.queue.shift();
+    }
 
     return this;
   }

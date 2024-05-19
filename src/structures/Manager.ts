@@ -135,7 +135,7 @@ export class Manager extends EventEmitter {
       shards: 1,
       autoPlay: true,
       usePriority: false,
-      clientName: "Magmastream",
+      clientName: "@pipichka/magmastream",
       defaultSearchPlatform: "youtube",
       useNode: "leastPlayers",
       ...options,
