@@ -21,6 +21,7 @@ export class Node {
   /** The stats for the node. */
   public stats: NodeStats;
   public manager: Manager;
+  public isEnnabled: boolean = true;
   /** The node's session ID. */
   public sessionId: string | null;
   /** The REST instance. */
@@ -100,6 +101,17 @@ export class Node {
     this.manager.nodes.set(this.options.identifier, this);
     this.manager.emit("nodeCreate", this);
     this.rest = new Rest(this);
+  }
+
+  /** Sets the status of the Node. */
+  public setEnnabled(stats: boolean): void {
+    if (this.isEnnabled === stats) return;
+    if (stats === false) {
+      if (this.manager.nodes.filter((n) => n.isEnnabled && n.connected).size <= 1) {
+        throw new RangeError("All nodes are not connected or disabled.");
+      }
+    }
+    this.isEnnabled = stats;
   }
 
   /** Connects to the Node. */

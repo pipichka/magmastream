@@ -47,7 +47,7 @@ export class Manager extends EventEmitter {
   /** Returns the nodes that has the least load. */
   private get leastLoadNode(): Collection<string, Node> {
     return this.nodes
-      .filter((node) => node.connected)
+      .filter((node) => node.connected && node.isEnnabled)
       .sort((a, b) => {
         const aload = a.stats.cpu
           ? (a.stats.cpu.lavalinkLoad / a.stats.cpu.cores) * 100
@@ -62,7 +62,7 @@ export class Manager extends EventEmitter {
   /** Returns the nodes that has the least amount of players. */
   private get leastPlayersNode(): Collection<string, Node> {
     return this.nodes
-      .filter((node) => node.connected)
+      .filter((node) => node.connected && node.isEnnabled)
       .sort((a, b) => a.stats.players - b.stats.players);
   }
 
