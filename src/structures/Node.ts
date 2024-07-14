@@ -414,10 +414,7 @@ export class Node {
     track: Track,
     payload: TrackEndEvent
   ): Promise<void> {
-    if (player.state === "MOVING") {
-      player.state = "CONNECTED";
-      return;
-    }
+    if (player.state === "MOVING") return;
     player.queue.previous = player.queue.current;
     player.queue.current = null;
 
