@@ -107,7 +107,8 @@ export class Player {
 
     this.manager.players.set(options.guild, this);
     this.manager.emit("playerCreate", this);
-    this.setVolume(options.volume ?? 100);
+    this.volume = options.volume ?? 100;
+    //this.setVolume(options.volume ?? 100);
   }
 
   /**
@@ -180,7 +181,7 @@ export class Player {
     }
 
     if (this?.nowPlayingMessage && this?.nowPlayingMessage.deletable) {
-      this?.nowPlayingMessage?.delete().catch(() => {});
+      this?.nowPlayingMessage?.delete().catch(() => { });
     }
     this.node.rest.destroyPlayer(this.guild);
     this.manager.emit("playerDestroy", this);
@@ -263,10 +264,10 @@ export class Player {
     const finalOptions = playOptions
       ? playOptions
       : ["startTime", "endTime", "noReplace"].every((v) =>
-          Object.keys(optionsOrTrack || {}).includes(v)
-        )
-      ? (optionsOrTrack as PlayOptions)
-      : {};
+        Object.keys(optionsOrTrack || {}).includes(v)
+      )
+        ? (optionsOrTrack as PlayOptions)
+        : {};
 
     if (TrackUtils.isUnresolvedTrack(this.queue.current)) {
       try {
@@ -284,11 +285,40 @@ export class Player {
       guildId: this.guild,
       data: {
         encodedTrack: this.queue.current?.track,
+        volume: this.volume,
         ...finalOptions,
       },
     });
 
     Object.assign(this, { position: 0, playing: true });
+  }
+
+  /** Move node. */
+  public async moveNode(node: Node): Promise<void> {
+    if (this.node !== node) {
+      this.state = "MOVING";
+      const position = this.position;
+      await this.node.rest.delete(`/v4/sessions/${this.node.rest.sessionId}/players/${this.guild}`);
+      this.node = node;
+
+      const { sessionId, event: { token, endpoint } } = this.voiceState;
+      await node.rest.updatePlayer({
+        guildId: this.guild,
+        data: { voice: { token, endpoint, sessionId } },
+      });
+
+      await node.rest.updatePlayer({
+        guildId: this.guild,
+        data: {
+          encodedTrack: this.queue.current?.track,
+          position: position,
+          volume: this.volume,
+        },
+      });
+    }
+    // setTimeout(() => {
+    //   this.state = "CONNECTED";
+    // }, 2000);
   }
 
   /**

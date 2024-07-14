@@ -303,7 +303,8 @@ export type State =
   | "CONNECTING"
   | "DISCONNECTED"
   | "DISCONNECTING"
-  | "DESTROYING";
+  | "DESTROYING"
+  | "MOVING";
 
 export type PlayerEvents =
   | TrackStartEvent

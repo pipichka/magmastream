@@ -178,6 +178,16 @@ export class Node {
 
   protected close(code: number, reason: string): void {
     this.manager.emit("nodeDisconnect", this, { code, reason });
+    const node = this.manager.nodes.filter((n) => n.connected).random();
+    if (node) {
+      const players = this.manager.players.filter((p) => p.node == this);
+      players.forEach((p) => {
+        if (p?.nowPlayingMessage && p?.nowPlayingMessage.deletable) {
+          p?.nowPlayingMessage?.delete().catch(() => {});
+        }
+        p.moveNode(node);
+      });
+    }
     if (code !== 1000 || reason !== "destroy") this.reconnect();
   }
 
@@ -404,6 +414,10 @@ export class Node {
     track: Track,
     payload: TrackEndEvent
   ): Promise<void> {
+    if (player.state === "MOVING") {
+      player.state = "CONNECTED";
+      return;
+    }
     player.queue.previous = player.queue.current;
     player.queue.current = null;
 
